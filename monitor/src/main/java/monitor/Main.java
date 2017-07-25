@@ -11,6 +11,7 @@ import monitor.utils.Utils;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -43,9 +44,8 @@ public class Main {
 	}
 
 	private static void logClassPathContent() {
-		URLClassLoader classLoader = (URLClassLoader) Main.class.getClassLoader();
-		String message = stream(classLoader.getURLs())
-				.map(URL::toString)
+		String[] classPath = System.getProperty("java.class.path").split(":");
+		String message = Arrays.stream(classPath)
 				.map(url -> "\t" + url)
 				.collect(joining("\n", "Class path content:\n", "\n"));
 		System.out.println(message);
