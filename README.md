@@ -13,6 +13,14 @@ Each module has its own directory that contains the known folder structure, e.g.
 
 It was developed as a Java 8 application and now needs to be made compatible with Java 9 and then be modularized.
 
+## Branches
+
+Each of the branches contains a different version of the project:
+
+* [`master`](https://github.com/CodeFX-org/demo-java-9-migration/tree/master): starting point, Java 8
+* [`migrated`](https://github.com/CodeFX-org/demo-java-9-migration/tree/migrated): Java 9 compatible
+* [`modularized`](https://github.com/CodeFX-org/demo-java-9-migration/tree/modularized): partially modularized
+
 ## Build and Execution
 
 In the project's root folder:
