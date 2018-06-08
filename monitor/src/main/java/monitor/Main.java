@@ -28,7 +28,7 @@ public class Main {
 	public static void main(String[] args) {
 		logClassPathContent();
 
-		Monitor monitor = createMonitor();
+		var monitor = createMonitor();
 		MonitorServer server = MonitorServer
 				.create(monitor::currentStatistics)
 				.start();
