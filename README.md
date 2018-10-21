@@ -34,6 +34,9 @@ In the project's root folder:
 
 ## Troubles
 
+Here's what you're facing.
+(If you get stuck, check [the guide](guide.adoc).)
+
 ### Migration to Java 9
 
 * internal `BASE64Encoder` is gone ~> use `Base64.getEncoder` instead
