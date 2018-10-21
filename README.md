@@ -26,7 +26,7 @@ Each of the branches contains a different version of the project:
 In the project's root folder:
 
 * to build: `mvn clean install`
-* to run: `java -cp 'monitor/target/libs/*':'monitor/target/main-1.0-SNAPSHOT.jar' monitor.Main`
+* to run: `java -cp 'app/*' monitor.Main`
 * to contact REST endpoints:
 	* `curl http://localhost:4567/stats/json`
 	* `curl http://localhost:4567/stats/json64 | base64 -d`

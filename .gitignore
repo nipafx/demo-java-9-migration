@@ -1,2 +1,6 @@
 .idea
+*.iml
 */target
+build
+app
+mods
