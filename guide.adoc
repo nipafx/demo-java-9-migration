@@ -3,13 +3,15 @@
 Show that it works on Java 8:
 
 ```sh
-mvn clean install
+mvn -v
+mvn clean verify
 java -cp 'app/*' monitor.Main
 ```
 
 In a different terminal:
 
 ```sh
+curl http://localhost:4567/stats/xml
 watch -n 1 curl http://localhost:4567/stats/xml
 ```
 
@@ -19,11 +21,7 @@ watch -n 1 curl http://localhost:4567/stats/xml
 
 . start building with Java 9
 .. show `mvn -v`
-.. set `JAVA_HOME` in `.mavenrc`
-+
-```sh
-JAVA_HOME="/opt/jdk-9"
-```
+.. `sdk use java jdk-9`
 .. show `mvn -v`
 . create a profile for Java 9+
 +
@@ -47,7 +45,7 @@ JAVA_HOME="/opt/jdk-9"
 
 #### Internal APIs
 
-. `mvn clean install`
+. `mvn clean verify`
 . fix use of `sun.misc.BASE64Encoder`
 +
 ```java
@@ -130,7 +128,7 @@ Base64.getEncoder().encodeToString(content.getBytes());
 Start running with Java 9:
 
 ```sh
-java9 -cp 'app/*' monitor.Main
+java --class-path 'app/*' monitor.Main
 ```
 
 . fix cast to `URLClassLoader` by replacing code in `logClassPathContent` with
@@ -146,14 +144,14 @@ System.out.println(message);
 . add module `java.xml.bind`
 +
 ```sh
-java9 --add-modules java.xml.bind -cp 'app/*' monitor.Main
+java --add-modules java.xml.bind --class-path 'app/*' monitor.Main
 ```
 
-. note that `--add-exports`,  `--add-opens`, `--add-modules`, `--patch-module` usually carry from build to compile time
+. note that `--add-exports`, `--add-opens`, `--add-modules`, `--patch-module` usually carry from build to compile time
 
 ### Using Java 10
 
-. edit `.mavenrc` to point to Java 10
+. update to 10 with `sdk use java jdk-10`
 . show `mvn -v`
 . limit parent POM profile for Java 9+ to 9 and copy paste to create one for 10
 +
@@ -170,7 +168,7 @@ java9 --add-modules java.xml.bind -cp 'app/*' monitor.Main
 </profile>
 ```
 . to use `var` somewhere, activate java-10 profile in IntelliJ and reimport
-. build with `mvn clean install`
+. build with `mvn clean verify`
 . fix error in _monitor.utils_ by updating Mockito to 2.18.3
 . in parent POM's Java 10 profile update ASM to preempt compiler problems
 +
@@ -196,12 +194,12 @@ java9 --add-modules java.xml.bind -cp 'app/*' monitor.Main
 . run with
 +
 ```sh
-java10 --add-modules java.xml.bind -cp 'app/*' monitor.Main
+java --add-modules java.xml.bind --class-path 'app/*' monitor.Main
 ```
 
 ### Using Java 11
 
-. edit `.mavenrc` to point to Java 11
+. update to 11 with `sdk use java jdk-11`
 . show `mvn -v`
 . in parent POM update compiler plugin to 3.8.0 +
   remove ASM update in profile `java-10`
@@ -219,8 +217,16 @@ java10 --add-modules java.xml.bind -cp 'app/*' monitor.Main
 	</properties>
 </profile>
 ```
-. build with `mvn clean install`
-. replace `--add-modules` with third-party dependencies in _monitor.rest_'s POM:
+. build with `mvn clean verify`
+. in _monitor.rest_'s POM, show how to edit profile to only be active for 9, 10:
++
+```xml
+<id>java-9-01</id>
+<activation>
+	<jdk>[9,10]</jdk>
+</activation>
+```
+. then remove profile and add third-party dependencies in _monitor.rest_'s POM:
 +
 ```xml
 <dependency>
@@ -247,7 +253,7 @@ java10 --add-modules java.xml.bind -cp 'app/*' monitor.Main
 . run with
 +
 ```sh
-java11 -cp 'app/*' monitor.Main
+java --class-path 'app/*' monitor.Main
 ```
 . observe that `xml` endpoint does not return anything, but `json` does
 . activate `java-11` profile, reimport, and launch from IntelliJ
@@ -264,13 +270,36 @@ java11 -cp 'app/*' monitor.Main
 ```
 +
 (Was not needed before because https://docs.oracle.com/javase/9/docs/api/java.xml.bind-summary.html[`java.xml.bind` requires it])
-
+. point out illegal access warning (if present) and replace all dependencies in _monitor.rest_ with:
++
+```xml
+<dependency>
+	<groupId>javax.annotation</groupId>
+	<artifactId>javax.annotation-api</artifactId>
+	<version>1.3.2</version>
+</dependency>
+<dependency>
+	<groupId>javax.xml.bind</groupId>
+	<artifactId>jaxb-api</artifactId>
+	<version>2.3.1</version>
+</dependency>
+<dependency>
+	<groupId>com.sun.xml.bind</groupId>
+	<artifactId>jaxb-core</artifactId>
+	<version>2.3.0.1</version>
+</dependency>
+<dependency>
+	<groupId>com.sun.xml.bind</groupId>
+	<artifactId>jaxb-impl</artifactId>
+	<version>2.3.3</version>
+</dependency>
+```
 
 ## Modularization
 
 ### Preparation
 
-* set compiler source and target to Java 11
+* in parent POM, replace compiler source and target 8 with release 11
 * remove version-specific profiles
 
 ### Get an Overview
@@ -278,19 +307,19 @@ java11 -cp 'app/*' monitor.Main
 . see artifact dependencies
 +
 ```sh
-jdeps11 -s -R -cp 'app/*' app/main.jar
+jdeps -summary -recursive --class-path 'app/*' --multi-release 11 app/main.jar
 ```
 
 . limiting to _Monitor_ classes
 +
 ```sh
-jdeps11 -include 'monitor.*' -s -R -cp 'app/*' app/main.jar
+jdeps -summary -recursive --class-path 'app/*' --multi-release 11 -include 'monitor.*' app/main.jar
 ```
 
 . create a diagram
 +
 ```sh
-jdeps11 -include 'monitor.*' -s -R --dot-output . -cp 'monitor/target/libs/*' monitor/target/main.jar
+jdeps -summary -recursive --class-path 'app/*' --multi-release 11 -include 'monitor.*' --dot-output . app/main.jar
 dot -Tpng -O summary.dot
 gwenview summary.dot.png
 ```
@@ -301,7 +330,7 @@ gwenview summary.dot.png
 sed -i '/java.base/d' summary.dot
 sed -i 's/.jar//g' summary.dot
 dot -Tpng -O summary.dot
-gwenview summary.dot.png
+gwenview summary.dot.png &
 ```
 
 ### Start Bottom-Up
@@ -318,35 +347,51 @@ module monitor.utils {
 .. observe that _monitor.utils_ is module:
 +
 ```sh
-jar11 --describe-module --file monitor/target/libs/utils.jar
+jar --describe-module --file app/utils.jar
 ```
 .. observe that the module works on the class path:
 +
 ```sh
-java11 -cp 'app/*' monitor.Main
+java --class-path 'app/*' monitor.Main
 ```
 .. make it work on module path
-... add `mv mv app/utils.jar mods` to `move-modules.sh`
+... create `move-modules.sh`
++
+```sh
+#!/bin/bash
+set -e
+
+rm -rf mods
+mkdir mods
+```
++
+and make it executable with `chmod +x move-modules.sh`
+... add `mv app/utils.jar mods` to `move-modules.sh`
+... create `run.sh`
++
+```sh
+#!/bin/bash
+set -e
+```
 ... try to run
 +
 ```sh
-./move-modules.sh
 # fails
-java11 -cp 'app/*' --module-path mods monitor.Main
+java --class-path 'app/*' --module-path mods monitor.Main
 # too noisy
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--show-module-resolution monitor.Main
 # no utils
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--show-module-resolution monitor.Main
 | grep utils
 # yes utils!
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--add-modules monitor.utils \
 	--show-module-resolution monitor.Main
 | grep utils
 # launch
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--add-modules monitor.utils \
 	monitor.Main
 ```
@@ -379,10 +424,12 @@ module monitor.observer.beta {
 .. run
 +
 ```sh
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--add-modules monitor.utils,monitor.observer.alpha,monitor.observer.beta \
 	monitor.Main
 ```
+
+// TODO: during my last preparation, I changed a few things, but didn't 
 
 . modularize statistics as preparation for _monitor.rest_
 .. modularize _monitor.statistics_
@@ -397,7 +444,7 @@ module monitor.statistics {
 .. run
 +
 ```sh
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--add-modules monitor.utils,monitor.observer.alpha,monitor.observer.beta,monitor.statistics \
 	monitor.Main
 ```
@@ -448,7 +495,7 @@ mv app/jackson-databind.jar mods
 .. run
 +
 ```sh
-java11 -cp 'app/*' --module-path mods \
+java --class-path 'app/*' --module-path mods \
 	--add-modules monitor.rest,monitor.observer.alpha,monitor.observer.beta \
 	monitor.Main
 ```
